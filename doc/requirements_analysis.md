@@ -28,37 +28,18 @@ WorkDrive는 사용자가 파일을 업로드, 다운로드, 조회, 공유할 �
 
 ---
 
-## 2.2 Use Case Diagram
+## 2.2 주요 기능 분류
 
-```mermaid
-flowchart LR
+WorkDrive의 기능은 크게 로그인, 파일 관리, 파일 조회, 파일 공유, 권한 관리로 나눌 수 있다.
 
-User((사용자))
-Admin((관리자))
-Storage((저장소 시스템))
-Auth((인증 시스템))
-
-subgraph WorkDrive
-    UC1([로그인한다])
-    UC2([파일을 업로드한다])
-    UC3([파일을 다운로드한다])
-    UC4([파일 목록을 조회한다])
-    UC5([파일을 공유한다])
-    UC6([권한을 관리한다])
-end
-
-User --- UC1
-User --- UC2
-User --- UC3
-User --- UC4
-User --- UC5
-
-Admin --- UC6
-
-UC1 --- Auth
-UC2 --- Storage
-UC3 --- Storage
-```
+| 구분 | 기능 | 설명 |
+|---|---|---|
+| 로그인 | 로그인한다 | 사용자가 이메일과 비밀번호로 시스템에 접속한다. |
+| 파일 관리 | 파일을 업로드한다 | 사용자가 파일을 시스템에 저장한다. |
+| 파일 관리 | 파일을 다운로드한다 | 사용자가 저장된 파일을 내려받는다. |
+| 파일 조회 | 파일 목록을 조회한다 | 사용자가 업로드된 파일 목록을 확인한다. |
+| 파일 공유 | 파일을 공유한다 | 사용자가 다른 사용자에게 파일 접근 권한을 설정한다. |
+| 권한 관리 | 권한을 관리한다 | 관리자가 사용자 또는 파일 접근 권한을 관리한다. |
 
 ---
 
@@ -141,44 +122,38 @@ UC3 --- Storage
 
 ## 4.1 Class Diagram
 
-```mermaid
-classDiagram
+```text
+User
+ ├── email
+ ├── password
+ ├── login()
+ ├── uploadFile()
+ └── shareFile()
 
-class User {
-    +email
-    +password
-    +login()
-    +uploadFile()
-    +shareFile()
-}
+Admin
+ └── manageUser()
 
-class Admin {
-    +manageUser()
-}
+File
+ ├── fileName
+ ├── fileSize
+ ├── upload()
+ ├── download()
+ └── delete()
 
-class File {
-    +fileName
-    +fileSize
-    +upload()
-    +download()
-    +delete()
-}
+Permission
+ ├── targetUser
+ ├── permissionType
+ └── setPermission()
 
-class Permission {
-    +targetUser
-    +permissionType
-    +setPermission()
-}
+StorageSystem
+ ├── saveFile()
+ └── loadFile()
 
-class StorageSystem {
-    +saveFile()
-    +loadFile()
-}
-
-User <|-- Admin
-User --> File
-File --> Permission
-File --> StorageSystem
+관계
+- User는 File을 관리한다.
+- File은 Permission 정보를 가진다.
+- File은 StorageSystem에 저장된다.
+- Admin은 User를 관리한다.
 ```
 
 ---
@@ -248,61 +223,40 @@ File --> StorageSystem
 
 ## 5.1 Sequence Diagram - 파일 업로드
 
-```mermaid
-sequenceDiagram
-
-actor User as 사용자
-participant UI as 화면
-participant File as File
-participant Storage as 저장소 시스템
-
-User->>UI: 업로드 버튼 선택
-UI->>User: 파일 선택 창 출력
-User->>UI: 파일 선택
-UI->>File: 업로드 요청
-File->>Storage: 파일 저장 요청
-Storage-->>File: 저장 완료
-File-->>UI: 업로드 성공
-UI-->>User: 완료 메시지 출력
+```text
+사용자 → 화면 : 업로드 버튼 선택
+화면 → 사용자 : 파일 선택 창 출력
+사용자 → 화면 : 파일 선택
+화면 → File : 업로드 요청
+File → 저장소 시스템 : 파일 저장 요청
+저장소 시스템 → File : 저장 완료
+File → 화면 : 업로드 성공
+화면 → 사용자 : 완료 메시지 출력
 ```
 
 ---
 
 ## 5.2 Sequence Diagram - 파일 공유
 
-```mermaid
-sequenceDiagram
-
-actor User as 사용자
-participant UI as 화면
-participant File as File
-participant Permission as Permission
-
-User->>UI: 파일 선택
-User->>UI: 공유 버튼 선택
-UI->>User: 대상 사용자 입력 요청
-User->>UI: 이메일 입력
-UI->>Permission: 권한 저장 요청
-Permission->>File: 공유 정보 저장
-Permission-->>UI: 저장 완료
-UI-->>User: 공유 완료 메시지 출력
+```text
+사용자 → 화면 : 파일 선택
+사용자 → 화면 : 공유 버튼 선택
+화면 → 사용자 : 대상 사용자 입력 요청
+사용자 → 화면 : 이메일 입력
+화면 → Permission : 권한 저장 요청
+Permission → File : 공유 정보 저장
+Permission → 화면 : 저장 완료
+화면 → 사용자 : 공유 완료 메시지 출력
 ```
 
 ---
 
-# 6. 상태 다이어그램
+# 6. 상태 분석
 
 ## 6.1 파일 상태 변화
 
-```mermaid
-stateDiagram-v2
-
-[*] --> 업로드됨
-업로드됨 --> 저장됨
-저장됨 --> 공유됨
-공유됨 --> 저장됨
-저장됨 --> 삭제됨
-삭제됨 --> [*]
+```text
+업로드됨 → 저장됨 → 공유됨 → 삭제됨
 ```
 
 ---
@@ -331,5 +285,3 @@ stateDiagram-v2
 | N-002 | U-01 | User |
 | N-003 | U-03 | Permission |
 | D-002 | U-02 | StorageSystem |
-
----
